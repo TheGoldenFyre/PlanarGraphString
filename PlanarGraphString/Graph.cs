@@ -45,8 +45,14 @@ public class Graph<T>
         if (undirected)
             E[to].Add(new Edge(to, from));
     }
-
-    public string Neighbourhood(int index)
+    
+    /// <summary>
+    /// Show the neighbourhood around a certain vertex
+    /// </summary>
+    /// <param name="index">Index to the vertex</param>
+    /// <param name="displayIndexValue">The value to be displayed as the center vertex. If none is passed, the vertex value is used</param>
+    /// <returns>A multiline string containing a visual representation all the vertexes connected to the vertex</returns>
+    public string Neighbourhood(int index, string displayValue = null, bool drawEdges = false)
     {
         int n = EdgeCount(index);
         // Calculate the minimum square lengths to represent the neighbourhood
@@ -58,7 +64,7 @@ public class Graph<T>
         string[,] values = new string[outputDimensions, outputDimensions];
         int[] colLengths = new int[outputDimensions];
 
-        values[outputDimensions / 2, outputDimensions / 2] = "CURRENT";
+        values[outputDimensions / 2, outputDimensions / 2] = (displayValue == null) ? V[index].ToString() : displayValue;
         colLengths[outputDimensions / 2] = values[outputDimensions / 2, outputDimensions / 2].Length;
         
         for (int i = 0; i < n; i++)
@@ -73,11 +79,9 @@ public class Graph<T>
         
         string[] outputLines = new string[4 * outputDimensions];
         for (int i = 0; i < outputLines.Length; i++) outputLines[i] = "";
-
-        bool finalEdgeConnnected = false;
+        
         for (int y = 0; y < outputDimensions; y++)
         {
-            finalEdgeConnnected = false;
             for (int x = 0; x < outputDimensions; x++)
             {
                 int offset = y * 4;
@@ -86,63 +90,35 @@ public class Graph<T>
                 if (values[x, y] == null)
                 {
                     if (y * outputDimensions + x > outputDimensions * outputDimensions / 2) continue;
-                    
-                    if (y > 0 && x == outputDimensions / 2 - 1)
+
+                    else 
                     {
-                        string vertstring = new string(' ', colLengths[x] + 2) +
-                                            new string(' ', (distanceBetweenNodes - 1) / 2) + "│" +
-                                            new string(' ', distanceBetweenNodes / 2);
+                        string vertstring = new string(' ', colLengths[x] + 2 + distanceBetweenNodes);
+                        
                         outputLines[offset] += vertstring;
                         outputLines[offset+1] += vertstring;
                         outputLines[offset+2] += vertstring;
-                        outputLines[offset+3] += new string(' ',colLengths[x] + 2 + (distanceBetweenNodes - 1) / 2) + '└' + new string('─', distanceBetweenNodes / 2);
+                        outputLines[offset+3] += vertstring;
                     }
-                    else
-                    {
-                        string s = new string(' ', colLengths[x] + 2 + distanceBetweenNodes);
-                        outputLines[offset] += s;
-                        outputLines[offset+1] += s;
-                        outputLines[offset+2] += s;
-                        outputLines[offset+3] += s;
-                    };
                     continue;
                 }
 
-                bool finalInRow = x == outputDimensions - 1 || y * outputDimensions + x >= n;
+                string leftOffset = new string(' ', (colLengths[x] - values[x, y].Length) / 2);
+                string rightOffset = new string(' ', (colLengths[x] - values[x, y].Length + 1) / 2);
+                string betweenNodes = new string(' ', distanceBetweenNodes);
 
-                string toNextNode = (y > 0 && x == outputDimensions / 2 - 1) ? new string(' ', (distanceBetweenNodes - 1) / 2) + "│" + new string(' ', distanceBetweenNodes / 2) : new string(' ', distanceBetweenNodes);
-                char vertEdgeConnect = (x != outputDimensions / 2 - 1) ? '─' : ((y == 0) ? '┬' : ((y == outputDimensions - 1) ? '┴' : '┼'));
-                string toNextEdge = new string('─', (distanceBetweenNodes - 1) / 2) + vertEdgeConnect +
-                                    new string('─', distanceBetweenNodes / 2);
-                char edgeConnect = (x == 0) ? '└' : ((finalInRow) ? '┘' : '┴');
-                char edgeRight = (finalInRow) ? ' ' : '─';
-                if (vertEdgeConnect != '─' && edgeRight == '─') finalEdgeConnnected = true;
-                char edgeLeft = (x == 0) ? ' ' : '─';
-                
-                
-                outputLines[offset] += "┌" + new string('─', values[x, y].Length) + "┐" +
-                                       new string(' ', colLengths[x] - values[x, y].Length) + toNextNode;
-                outputLines[offset + 1] += "│" + values[x, y] + "│" +
-                                           new string(' ', colLengths[x] - values[x, y].Length) + toNextNode;
-                outputLines[offset + 2] += "└" + new string('─', (values[x, y].Length - 1) / 2) + "┬" + new string('─', (values[x, y].Length) / 2) + "┘" +
-                                       new string(' ', colLengths[x] - values[x, y].Length) + toNextNode;
-                outputLines[offset + 3] += new string(edgeLeft, (values[x, y].Length - 1) / 2 + 1) + edgeConnect +
-                                           new string(edgeRight,
-                                               (values[x, y].Length) / 2 + colLengths[x] - values[x, y].Length + 1) + ((edgeRight == '─') ? toNextEdge : "");
+
+                outputLines[offset] += leftOffset + "┌" + new string('─', values[x, y].Length) + "┐" +
+                                       rightOffset + betweenNodes;
+                outputLines[offset + 1] += leftOffset + "│" + values[x, y] + "│" +
+                                           rightOffset + betweenNodes;
+                outputLines[offset + 2] += leftOffset + "└" + new string('─', values[x, y].Length) + "┘" +
+                                           rightOffset + betweenNodes;
+                outputLines[offset + 3] += new string(' ', colLengths[x] + distanceBetweenNodes);
 
             }
         }
         
-        if (!finalEdgeConnnected)
-        {
-            int connectionPoint = outputLines[outputLines.Length - 2].IndexOf("│");
-            if (connectionPoint != -1)
-            {
-                string temp = outputLines[outputLines.Length - 1].TrimEnd();
-                outputLines[outputLines.Length - 1] = temp + new string('─', connectionPoint - temp.Length) + "┘";
-            }
-        }
-
         return string.Join("\n", outputLines);
     }
 }
